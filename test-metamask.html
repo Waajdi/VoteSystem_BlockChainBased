@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MetaMask Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .error {
+            background: #ffebee;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            color: #c62828;
+        }
+        .success {
+            background: #e8f5e9;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 MetaMask Connection Test</h1>
+    
+    <div id="status"></div>
+    
+    <button onclick="checkMetaMask()">1. Check MetaMask</button>
+    <button onclick="checkNetwork()">2. Check Network</button>
+    <button onclick="connectWallet()">3. Connect Wallet</button>
+    <button onclick="checkBalance()">4. Check Balance</button>
+    
+    <div id="output"></div>
+    
+    <div class="info">
+        <h3>📋 Import Account Instructions:</h3>
+        <ol>
+            <li>Click the <strong>account icon</strong> (circle/avatar) at the top-right of MetaMask</li>
+            <li>Click <strong>"Add account or hardware wallet"</strong></li>
+            <li>Select <strong>"Import account"</strong></li>
+            <li>Import a test account by copying a private key from the Hardhat node output:</li>
+            <code style="background: #fff; padding: 5px; display: block; margin: 5px 0;">
+                # Run in terminal:
+                cd backend
+                npx hardhat node
+                # Copy one of the private keys printed in that terminal and paste here
+            </code>
+            <li>Click <strong>"Import"</strong></li>
+        </ol>
+        <p><strong>Make sure you're on "Localhost 8545" network!</strong></p>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+        const status = document.getElementById('status');
+
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = message;
+            output.appendChild(div);
+        }
+
+        function checkMetaMask() {
+            output.innerHTML = '';
+            if (typeof window.ethereum !== 'undefined') {
+                log('✅ MetaMask is installed!', 'success');
+                log('Provider: ' + window.ethereum.constructor.name, 'info');
+            } else {
+                log('❌ MetaMask is NOT installed!', 'error');
+            }
+        }
+
+        async function checkNetwork() {
+            output.innerHTML = '';
+            try {
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                const chainIdDecimal = parseInt(chainId, 16);
+                
+                if (chainIdDecimal === 31337) {
+                    log('✅ Connected to Localhost 8545 (Chain ID: 31337)', 'success');
+                } else {
+                    log('❌ Wrong network! Current Chain ID: ' + chainIdDecimal, 'error');
+                    log('Please switch to "Localhost 8545" network in MetaMask', 'error');
+                }
+            } catch (error) {
+                log('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function connectWallet() {
+            output.innerHTML = '';
+            try {
+                const accounts = await window.ethereum.request({ 
+                    method: 'eth_requestAccounts' 
+                });
+                log('✅ Wallet connected!', 'success');
+                log('Account: ' + accounts[0], 'info');
+            } catch (error) {
+                log('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function checkBalance() {
+            output.innerHTML = '';
+            try {
+                const accounts = await window.ethereum.request({ 
+                    method: 'eth_accounts' 
+                });
+                
+                if (accounts.length === 0) {
+                    log('No account connected. Click "Connect Wallet" first.', 'error');
+                    return;
+                }
+                
+                const balance = await window.ethereum.request({
+                    method: 'eth_getBalance',
+                    params: [accounts[0], 'latest']
+                });
+                
+                const balanceInEth = parseInt(balance, 16) / 1e18;
+                log('Account: ' + accounts[0], 'info');
+                log('✅ Balance: ' + balanceInEth + ' ETH', 'success');
+                
+                if (balanceInEth > 0) {
+                    log('🎉 Great! You have ETH. You can now use the voting app!', 'success');
+                }
+            } catch (error) {
+                log('Error: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
